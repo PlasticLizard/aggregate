@@ -22,14 +22,22 @@ class Aggregate
 
   #The number of samples falling above the highest valued histogram bucket
   attr_reader :outliers_high
+  
+  DEFAULT_LOG_BUCKETS = 8
 
   # The number of buckets in the binary logarithmic histogram (low => 2**0, high => 2**@@LOG_BUCKETS)
-  @@LOG_BUCKETS = 128
+  def log_buckets
+    @log_buckets
+  end
 
   # Create a new Aggregate that maintains a binary logarithmic histogram
   # by default. Specifying values for low, high, and width configures
   # the aggregate to maintain a linear histogram with (high - low)/width buckets
-  def initialize (low=nil, high=nil, width=nil)
+  def initialize (options={})
+    low = options[:low]
+    high = options[:high]
+    width = options[:width]
+    @log_buckets = options[:log_buckets] || DEFAULT_LOG_BUCKETS
     @count = 0
     @sum = 0.0
     @sum2 = 0.0
@@ -58,8 +66,10 @@ class Aggregate
       @high = high
       @width = width
     else
+      low ||= 0
       @low = 1
-      @high = to_bucket(@@LOG_BUCKETS - 1)
+      @low = to_bucket(low)
+      @high = to_bucket(low + log_buckets - 1)
     end
 
     #Initialize all buckets to 0
@@ -220,7 +230,7 @@ class Aggregate
     if linear?
       return (@high-@low)/@width
     else
-      return @@LOG_BUCKETS
+      return log_buckets
     end
   end
 
@@ -228,7 +238,7 @@ class Aggregate
     if linear?
       return @low + (index * @width)
     else
-      return 2**(index)
+      return 2**(log2(@low) + index)
     end
   end
 
@@ -263,10 +273,11 @@ class Aggregate
   # A data point is added to the bucket[n] where the data point
   # is less than the value represented by bucket[n], but greater
   # than the value represented by bucket[n+1]
+public
   def to_index (data)
 
     # basic case is simple
-    return log2(data).to_i if !linear?
+    return log2([1,data/@low].max).to_i if !linear?
 
     # Search for the right bucket in the linear case
     @buckets.each_with_index do |count, idx|

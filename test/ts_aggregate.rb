@@ -4,7 +4,7 @@ require 'lib/aggregate'
 class SimpleStatsTest < Test::Unit::TestCase
 
   def setup
-    @stats = Aggregate.new
+    @stats = Aggregate.new(:log_buckets => 128)
 
     @@DATA.each do |x|
       @stats << x
@@ -43,7 +43,7 @@ class SimpleStatsTest < Test::Unit::TestCase
       i += 1
     end
 
-    assert_equal total_bucket_sum, @@DATA.length
+    assert_equal @@DATA.length, total_bucket_sum
 
     #Test each_nonzero iterator
     prev_bucket = 0
@@ -73,7 +73,7 @@ class SimpleStatsTest < Test::Unit::TestCase
 =end
 
   #XXX: Update test_bucket_contents() if you muck with @@DATA
-  @@DATA = [ 1, 5, 4, 6, 1028, 1972, 16384, 16385, 16383]
+   @@DATA = [ 1, 5, 4, 6, 1028, 1972, 16384, 16385, 16383]
   def test_bucket_contents
     #XXX: This is the only test so far that cares about the actual contents
     # of @@DATA, so if you update that array ... update this method too
@@ -119,7 +119,7 @@ end
 
 class LinearHistogramTest < Test::Unit::TestCase
   def setup
-    @stats = Aggregate.new(0, 32768, 1024)
+    @stats = Aggregate.new(:low => 0, :high => 32768, :width => 1024)
 
     @@DATA.each do |x|
       @stats << x
@@ -129,16 +129,16 @@ class LinearHistogramTest < Test::Unit::TestCase
   def test_validation
 
     # Range cannot be 0
-    assert_raise(ArgumentError) {bad_stats = Aggregate.new(32,32,4)}
+    assert_raise(ArgumentError) {bad_stats = Aggregate.new(:low => 32,:high => 32, :width => 4)}
 
     # Range cannot be negative
-    assert_raise(ArgumentError) {bad_stats = Aggregate.new(32,16,4)}
+    assert_raise(ArgumentError) {bad_stats = Aggregate.new(:low => 32, :high => 16, :width => 4)}
 
     # Range cannot be < single bucket
-    assert_raise(ArgumentError) {bad_stats = Aggregate.new(16,32,17)}
+    assert_raise(ArgumentError) {bad_stats = Aggregate.new(:low => 16, :high => 32, :width => 17)}
 
     # Range % width must equal 0 (for now)
-    assert_raise(ArgumentError) {bad_stats = Aggregate.new(1,16384,1024)}
+    assert_raise(ArgumentError) {bad_stats = Aggregate.new(:low => 1, :high => 16384, :width => 1024)}
   end
 
   #XXX: Update test_bucket_contents() if you muck with @@DATA
