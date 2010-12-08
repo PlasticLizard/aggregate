@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
      "README.textile",
      "Rakefile",
      "VERSION",
-     "aggregate.gemspec",
+     "aggregate_afurmanov.gemspec",
      "lib/aggregate.rb",
      "test/ts_aggregate.rb"
   ]
