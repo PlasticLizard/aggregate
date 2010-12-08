@@ -66,10 +66,10 @@ class Aggregate
       @high = high
       @width = width
     else
-      low ||= 0
+      low ||= 1
       @low = 1
-      @low = to_bucket(low)
-      @high = to_bucket(low + log_buckets - 1)
+      @low = to_bucket(to_index(low))
+      @high = to_bucket(to_index(@low) + log_buckets - 1)
     end
 
     #Initialize all buckets to 0
