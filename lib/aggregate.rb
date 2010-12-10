@@ -209,6 +209,11 @@ class Aggregate
     end
   end
 
+  # log2(x) returns j, | i = j-1 and 2**i <= data < 2**j
+  @@LOG2_DIVEDEND = Math.log(2)
+  def self.log2( x )
+    Math.log(x) / @@LOG2_DIVEDEND
+  end
   private
 
   def linear?
@@ -273,7 +278,7 @@ class Aggregate
   # A data point is added to the bucket[n] where the data point
   # is less than the value represented by bucket[n], but greater
   # than the value represented by bucket[n+1]
-public
+
   def to_index (data)
 
     # basic case is simple
@@ -288,11 +293,9 @@ public
     #Should not get here
     raise "#{data}"
   end
-
-  # log2(x) returns j, | i = j-1 and 2**i <= data < 2**j
-  @@LOG2_DIVEDEND = Math.log(2)
-  def log2( x )
-   Math.log(x) / @@LOG2_DIVEDEND
+  
+  def log2(x)
+    self.class.log2(x)
   end
 
 end
