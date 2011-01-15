@@ -2,6 +2,7 @@
 # configurable histogram for a set of given samples. Convenient for tracking
 # high throughput data.
 class Aggregate
+
   #The current average of all samples
   attr_reader :mean
 
@@ -22,8 +23,9 @@ class Aggregate
 
   #The number of samples falling above the highest valued histogram bucket
   attr_reader :outliers_high
-  
+
   DEFAULT_LOG_BUCKETS = 8
+  NAN = 0.0 / 0.0
 
   # The number of buckets in the binary logarithmic histogram (low => 2**0, high => 2**@@LOG_BUCKETS)
   def log_buckets
@@ -51,7 +53,7 @@ class Aggregate
 
       #Validate linear specification
       if high <= low
-	raise ArgumentError, "High bucket must be > Low bucket"
+  raise ArgumentError, "High bucket must be > Low bucket"
       end
 
       if high - low < width
@@ -59,7 +61,7 @@ class Aggregate
       end
 
       if 0 != (high - low).modulo(width)
-	raise ArgumentError, "Histogram range (high - low) must be a multiple of width"
+  raise ArgumentError, "Histogram range (high - low) must be a multiple of width"
       end
 
       @low = low
@@ -97,12 +99,23 @@ class Aggregate
     @buckets[to_index(data)] += 1 unless outlier?(data)
   end
 
+  def reject(data)
+    @min = NAN
+    @max = NAN
+    @count -= 1
+    @sum -= data
+    @sum2 -= (data * data)
+    @buckets[to_index(data)] -= 1 unless outlier?(data, true)
+  end
+  alias >> reject
+
   def mean
     @sum / @count
   end
 
   #Calculate the standard deviation
   def std_dev
+    return NAN unless @count > 1
     Math.sqrt((@sum2.to_f - ((@sum.to_f * @sum.to_f)/@count.to_f)) / (@count.to_f - 1))
   end
 
@@ -220,12 +233,12 @@ class Aggregate
     nil != @width
   end
 
-  def outlier? (data)
-
+  def outlier? (data, remove=false)
+    delta = remove ? -1 : 1
     if data < @low
-      @outliers_low += 1
+      @outliers_low += delta
     elsif data >= @high
-      @outliers_high += 1
+      @outliers_high += delta
     else
       return false
     end
@@ -258,23 +271,6 @@ class Aggregate
     bucket <= data && data < bucket + @width
   end
 
-=begin
-  def find_bucket(lower, upper, target)
-    #Classic binary search
-    return upper if right_bucket?(upper, target)
-
-    # Cut the search range in half
-    middle = (upper/2).to_i
-
-    # Determine which half contains our value and recurse
-    if (to_bucket(middle) >= target)
-      return find_bucket(lower, middle, target)
-    else
-      return find_bucket(middle, upper, target)
-    end
-  end
-=end
-
   # A data point is added to the bucket[n] where the data point
   # is less than the value represented by bucket[n], but greater
   # than the value represented by bucket[n+1]
@@ -293,7 +289,7 @@ class Aggregate
     #Should not get here
     raise "#{data}"
   end
-  
+
   def log2(x)
     self.class.log2(x)
   end
